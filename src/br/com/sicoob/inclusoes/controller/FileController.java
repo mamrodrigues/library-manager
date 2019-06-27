@@ -19,47 +19,44 @@ public class FileController implements IFileController {
 	@Override
 	public void remove(String path, List<String> removeFiles, CallbackContext callbackContext) {
 
-		if (removeFiles.isEmpty()) {
-			System.out.println("Nenhum item a remover");
-			return;
-		}
+		List<String> logs = new ArrayList<>();
 
-		System.out.println("Itens a serem removidos:");
-		for (String item : removeFiles) {
-			System.out.println(" - " + item);
+		if (removeFiles.isEmpty()) {
+			return;
 		}
 
 		try {
 			File arquivoBase = new File(path);
 
 			if (!arquivoBase.isFile()) {
-				System.out.println("O caminho informado não existe!");
+				logs.add("O caminho informado não existe!");
 				return;
 			}
 
 			List<String> listaArquivoBase = buscarListaArquivo(path);
-			List<String> listaArquivosRealmenteRemovidos = new ArrayList<String>();
 
 			File arquivo = new File(arquivoBase.getAbsolutePath());
 			PrintWriter pw = new PrintWriter(new FileWriter(arquivo));
 
-			for (String line : listaArquivoBase) {
+			listaArquivoBase.forEach(line -> {
+				
 				if (!removeFiles.contains(line)) {
 					pw.println(line);
+					
 				} else {
-					listaArquivosRealmenteRemovidos.add(line);
+					logs.add("Removido: ".concat(line));
 				}
-			}
-
-			System.out.println("Itens que foram removidos:");
-			for (String item : listaArquivosRealmenteRemovidos) {
-				System.out.println(" - " + item);
+			});
+			
+			if(logs.isEmpty()) {
+				logs.add("O(s) arquivo(s) informado(s) para remoção não existe(m) neste documento");
+				
 			}
 
 			pw.flush();
 			pw.close();
-			
-			callbackContext.onSuccess();
+
+			callbackContext.onSuccess(logs);
 
 		} catch (FileNotFoundException arq) {
 			arq.printStackTrace();
@@ -73,14 +70,10 @@ public class FileController implements IFileController {
 	@Override
 	public void put(String path, List<String> includeFiles, CallbackContext callbackContext) {
 
-		if (includeFiles.isEmpty()) {
-			System.out.println("Nenhum item a adicionar");
-			return;
-		}
+		List<String> logs = new ArrayList<>();
 
-		System.out.println("Itens a serem adicionados:");
-		for (String item : includeFiles) {
-			System.out.println(" + " + item);
+		if (includeFiles.isEmpty()) {
+			return;
 		}
 
 		try {
@@ -88,37 +81,31 @@ public class FileController implements IFileController {
 
 			File arquivoBase = new File(path);
 			if (!arquivoBase.isFile()) {
-				System.out.println("O caminho informado não existe!");
+				logs.add("O caminho informado não existe!");
 				return;
 			}
 
 			PrintWriter pw = new PrintWriter(new FileWriter(arquivoBase));
 
-			for (String item : listaArquivoBase) {
-				pw.println(item.trim());
-			}
+			listaArquivoBase.forEach(item -> pw.println(item.trim()));
 
-			List<String> listaArquivosDuplicados = new ArrayList<String>();
-
-			for (String adicionar : includeFiles) {
+			includeFiles.forEach(adicionar -> {
+				
 				if (!listaArquivoBase.contains(adicionar)) {
+		
 					pw.println(adicionar.trim());
+					logs.add("Adicionado: ".concat(adicionar));
+					
 				} else {
-					listaArquivosDuplicados.add(adicionar);
+					
+					logs.add("Arquivo ".concat(adicionar).concat(" já existe"));
 				}
-			}
+			});
 
 			pw.flush();
 			pw.close();
 
-			if (!listaArquivosDuplicados.isEmpty()) {
-				System.out.println("Itens já existentes anteriormente:");
-				for (String item : listaArquivosDuplicados) {
-					System.out.println(" ++ " + item);
-				}
-			}
-			
-			callbackContext.onSuccess();
+			callbackContext.onSuccess(logs);
 
 		} catch (FileNotFoundException arq) {
 			arq.printStackTrace();
